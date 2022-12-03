@@ -25,7 +25,7 @@ const User = require('../users/users-model')
     "message": "You shall not pass!"
   }
  */
-router.get('/', restricted, async (req,res,next) => { //eslint-disable-line
+router.get('/', restricted, async (req,res,next) => { 
   try{
     const users = await User.find()
     res.json(users)

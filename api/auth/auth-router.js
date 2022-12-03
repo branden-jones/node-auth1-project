@@ -7,6 +7,7 @@ const {
   checkPasswordLength
 } = require('./auth-middleware');
 const User = require('../users/users-model');
+const bcryptjs = require('bcryptjs');
 
 /**
   1 [POST] /api/auth/register { "username": "sue", "password": "1234" }
@@ -31,7 +32,16 @@ const User = require('../users/users-model');
   }
  */
 router.post('/register', checkPasswordLength, checkUsernameFree, async(req,res,next) => {
-  res.json('restricted')
+  const { username, password } = req.body
+  const hash = bcryptjs.hashSync(password, 12)
+  User.add({
+    username,
+    password: hash
+  })
+      .then(saved => {
+        res.status(201).json(saved)
+      })
+      .catch(next)
 })
 
 /**
@@ -50,7 +60,20 @@ router.post('/register', checkPasswordLength, checkUsernameFree, async(req,res,n
   }
  */
 router.post('/login', checkUsernameExists, async (req,res,next) => {
-  res.json('login')
+  const { password } = req.body
+  if (bcryptjs.compareSync(password, req.user.password)){
+    // set the cookie is stored on the client and store session on server
+    req.session.user = req.user
+    res.json({
+      message: `Welcome ${req.user.username}`
+    })
+  }
+  else{
+    next({
+      status: 401,
+      message: 'Invalid credentials'
+    })
+  }
 })
 
 /**
@@ -69,7 +92,23 @@ router.post('/login', checkUsernameExists, async (req,res,next) => {
   }
  */
 router.get('/logout', (req,res,next) => {
-  res.json('logout')
+  if (req.session.user){
+    req.session.destroy(err => {
+      if(err){
+        next(err)
+      }
+      else{
+        res.json({
+          message: "logged out... see ya later!"
+        })
+      }
+    })
+  }
+  else{
+    res.json({
+      message: 'no session'
+    })
+  }
 })
 
  
